@@ -1,5 +1,8 @@
 apply plugin: 'com.android.application'
-def javaVersion = JavaVersion.VERSION_1_7
+apply plugin: 'me.tatarka.retrolambda'
+apply plugin: 'com.droidtitan.lintcleaner'
+
+def javaVersion = JavaVersion.VERSION_1_8
 
 def gitSha() {
     try {
@@ -12,7 +15,6 @@ def gitSha() {
         throw new GradleException("can't get git rev, you should add git to system path or just input test value, such as 'testTinkerId'")
     }
 }
-
 
 
 def bakPath = file("${buildDir}/bakApk/")
@@ -28,14 +30,14 @@ ext {
 
     //for normal build
     //old apk file to build patch apk
-    tinkerOldApkPath = "${bakPath}/app-debug-1018-17-32-47.apk"
+    tinkerOldApkPath = "${bakPath}/template_v1.0_official_release_1201-07-21.apk"
     //proguard mapping file to build patch apk
-    tinkerApplyMappingPath = "${bakPath}/app-debug-1018-17-32-47-mapping.txt"
+    tinkerApplyMappingPath = "${bakPath}/app-official-release-1201-07-21-mapping.txt"
     //resource R.txt to build patch apk, must input if there is resource changed
-    tinkerApplyResourcePath = "${bakPath}/app-debug-1018-17-32-47-R.txt"
+    tinkerApplyResourcePath = "${bakPath}/app-official-release-1201-07-21-R.txt"
 
     //only use for build all flavor, if not, just ignore this field
-    tinkerBuildFlavorDirectory = "${bakPath}/app-1018-17-32-47"
+    //tinkerBuildFlavorDirectory = "${bakPath}/app-1201-14-48-32"
 }
 
 
@@ -53,7 +55,6 @@ def getApplyResourceMappingPath() {
 
 def getTinkerIdValue() {
     return hasProperty("TINKER_ID") ? TINKER_ID : gitSha()
-    //return "1.0.0"
 }
 
 def buildWithTinker() {
@@ -63,6 +64,9 @@ def buildWithTinker() {
 def getTinkerBuildFlavorDirectory() {
     return ext.tinkerBuildFlavorDirectory
 }
+
+def time = new Date().format("MMdd-HH-mm-ss")
+def date = new Date().format("MMdd-HH-mm")
 
 if (buildWithTinker()) {
     apply plugin: 'com.tencent.tinker.patch'
@@ -254,7 +258,7 @@ if (buildWithTinker()) {
     }
 
     List<String> flavors = new ArrayList<>();
-    project.android.productFlavors.each {flavor ->
+    project.android.productFlavors.each { flavor ->
         flavors.add(flavor.name)
     }
     boolean hasFlavors = flavors.size() > 0
@@ -266,7 +270,7 @@ if (buildWithTinker()) {
          * task type, you want to bak
          */
         def taskName = variant.name
-        def date = new Date().format("MMdd-HH-mm-ss")
+
 
         tasks.all {
             if ("assemble${taskName.capitalize()}".equalsIgnoreCase(it.name)) {
@@ -276,7 +280,7 @@ if (buildWithTinker()) {
                         def fileNamePrefix = "${project.name}-${variant.baseName}"
                         def newFileNamePrefix = hasFlavors ? "${fileNamePrefix}" : "${fileNamePrefix}-${date}"
 
-                        def destPath = hasFlavors ? file("${bakPath}/${project.name}-${date}/${variant.flavorName}") : bakPath
+                        def destPath = hasFlavors ? file("${bakPath}/${project.name}-${time}/${variant.flavorName}") : bakPath
                         from variant.outputs.outputFile
                         into destPath
                         rename { String fileName ->
@@ -360,7 +364,7 @@ android {
          * add for you in our task. you can copy tinker keep rules at
          * build/intermediates/tinker_intermediates/tinker_multidexkeep.pro
          */
-        multiDexKeepProguard file("keep_in_main_dex.txt")
+        //multiDexKeepProguard file("keep_in_main_dex.txt")
         /**
          * buildConfig can change during patch!
          * we can use the newly value when patch
@@ -372,7 +376,7 @@ android {
          * so we can get the newly git version easily!
          */
         buildConfigField "String", "TINKER_ID", "\"${getTinkerIdValue()}\""
-        buildConfigField "String", "PLATFORM",  "\"all\""
+        buildConfigField "String", "PLATFORM", "\"all\""
     }
 
     //recommend
@@ -385,30 +389,164 @@ android {
         targetCompatibility javaVersion
     }
 
-    buildTypes {
-        release {
-            minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+    //签名文件
+    signingConfigs {
+        debug {
+
         }
+
+        develop {
+            try {
+                storeFile file("D:\\AndroidProject\\TinkerDemo\\TinkerDemo.jks")
+                storePassword KEYSTORE_PASSWORD
+                keyAlias KEY_ALIAS
+                keyPassword KEY_PASSWORD
+            } catch (ex) {
+                throw new InvalidUserDataException('You should define KEYSTORE_PASSWORD and KEY_PASSWORD in gradle.properties')
+            }
+        }
+
+        release {
+            try {
+                storeFile file("D:\\AndroidProject\\TinkerDemo\\TinkerDemo.jks")
+                storePassword KEYSTORE_PASSWORD
+                keyAlias KEY_ALIAS
+                keyPassword KEY_PASSWORD
+            } catch (ex) {
+                throw new InvalidUserDataException('You should define KEYSTORE_PASSWORD and KEY_PASSWORD in gradle.properties')
+            }
+        }
+
+
+    }
+
+    buildTypes {
+        debug {
+            buildConfigField "boolean", "release", "false"
+            resValue "string", "app_name", "TinkerDemo_Debug"
+            versionNameSuffix "_debug"//将debug版本的版本名设置为_debug 便于查看
+            //  applicationIdSuffix ".debug"//将debug版本的包名设置为.debug以便能够同时在一台设备上安装debug和release版本的apk
+            manifestPlaceholders = [UMENG_APPKEY   : "55ffd2a8e0f55afca70031d7",
+                                    BAIDUMAP_APIKEY: "",
+                                    EASEMOB_APPKEY : ""]
+            minifyEnabled false
+            zipAlignEnabled false
+            // 移除无用的resource文件
+            shrinkResources false
+            proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
+            signingConfig signingConfigs.debug
+        }
+
+        develop {
+            buildConfigField "boolean", "release", "false"
+            resValue "string", "app_name", "TinkerDemo_Dev"
+            versionNameSuffix "_develop"//将debug版本的版本名设置为_develop 便于查看
+            // applicationIdSuffix ".develop"//将debug版本的包名设置为.develop以便能够同时在一台设备上安装debug和release版本的apk
+            manifestPlaceholders = [UMENG_APPKEY   : "",
+                                    BAIDUMAP_APIKEY: "",
+                                    EASEMOB_APPKEY : ""]
+            minifyEnabled true
+            zipAlignEnabled true
+            // 移除无用的resource文件
+            shrinkResources true
+            proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
+            signingConfig signingConfigs.develop
+            // 保留debug信息
+            //debuggable true
+        }
+
+        release {
+            // 不显示Log
+            buildConfigField "boolean", "release", "true"
+            resValue "string", "app_name", "TinkerDemo"
+            manifestPlaceholders = [UMENG_APPKEY   : "",
+                                    BAIDUMAP_APIKEY: "",
+                                    EASEMOB_APPKEY : ""]
+
+            minifyEnabled true
+            zipAlignEnabled true
+            // 移除无用的resource文件
+            shrinkResources true
+            proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
+            signingConfig signingConfigs.release
+        }
+        //多渠道打包
+        applicationVariants.all { variant ->
+            //动态替换AppName
+            def buildType = variant.buildType
+            if (buildType.applicationIdSuffix) {
+                def defaultPackageId = variant.applicationId.replaceAll(buildType.applicationIdSuffix, "")
+                variant.mergeResources.doLast {
+                    println "-------开始替换layout下的包名----------"
+                    def dir = file("${buildDir}/intermediates/res/merged/${variant.dirName}/layout")
+                    dir.listFiles().each { f ->
+                        String content = f.getText("utf-8")
+                        content = content.replaceAll("res/${defaultPackageId}", "res/${variant.applicationId}")
+                        f.write(content, "utf-8")
+                    }
+                }
+            }
+            //动态替换apk文件名字
+            variant.outputs.each { output ->
+                def outputFile = output.outputFile
+                if (outputFile != null && outputFile.name.endsWith(".apk")) {
+                    // 输出apk名称为boohee_v1.0_2015-01-15_wandoujia.apk
+                    def fileName
+                    if (variant.buildType.name == "release") {
+                        fileName = "template_v${defaultConfig.versionName}_${variant.productFlavors[0].name}_release_${date}.apk"
+                    } else if (variant.buildType.name == "develop") {
+                        fileName = "template_v${defaultConfig.versionName}_${variant.productFlavors[0].name}_develop_${date}.apk"
+                    } else {
+                        fileName = "template_v${defaultConfig.versionName}_${variant.productFlavors[0].name}_debug_${date}.apk"
+                    }
+                    println "-------替换apk文件名字----------"
+                    output.outputFile = new File(outputFile.parent, fileName)
+                }
+
+                // 删除unaligned apk
+                if (output.zipAlign != null) {
+                    output.zipAlign.doLast {
+                        output.zipAlign.inputFile.delete()
+                    }
+                }
+            }
+        }
+    }
+    // 多渠道打包配置文件
+    productFlavors {
+        official {}
+        /*taobao {}*/
+    }
+    //批量修改
+    productFlavors.all { flavor ->
+        flavor.manifestPlaceholders = [CHANNEL_PARAM: name]
     }
 }
 
 dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
-    androidTestCompile('com.android.support.test.espresso:espresso-core:2.2.2', {
-        exclude group: 'com.android.support', module: 'support-annotations'
-    })
-    compile 'com.android.support:appcompat-v7:24.2.1'
-    testCompile 'junit:junit:4.12'
 
-    compile "com.android.support:multidex:1.0.1"
+    testCompile rootProject.ext.dependencies["junit"]
+
+    compile rootProject.ext.dependencies["appcompat-v7"]
+    compile rootProject.ext.dependencies["multidex"]
+    compile rootProject.ext.dependencies["guava"]
+    compile(rootProject.ext.dependencies["butterknife"]) {
+        exclude group: "com.google.guava"
+    }
+    compile(rootProject.ext.dependencies["butterknife-apt"]) {
+        exclude group: "com.google.guava"
+    }
 
     //可选，用于生成application类
-    provided('com.tencent.tinker:tinker-android-anno:1.7.5'){
+    provided(rootProject.ext.dependencies["tinker-android-anno"]) {
         changing = true
     }
     //tinker的核心库
-    compile('com.tencent.tinker:tinker-android-lib:1.7.5'){
+    compile('com.tencent.tinker:tinker-android-lib:1.7.5') {
+        changing = true
+    }
+    compile(rootProject.ext.dependencies["tinker-android-lib"]) {
         changing = true
     }
 }
