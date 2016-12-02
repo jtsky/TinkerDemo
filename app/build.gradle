@@ -2,7 +2,6 @@ apply plugin: 'com.android.application'
 apply plugin: 'me.tatarka.retrolambda'
 apply plugin: 'com.droidtitan.lintcleaner'
 
-def javaVersion = JavaVersion.VERSION_1_8
 
 def gitSha() {
     try {
@@ -30,14 +29,14 @@ ext {
 
     //for normal build
     //old apk file to build patch apk
-    tinkerOldApkPath = "${bakPath}/template_v1.0_official_release_1201-07-21.apk"
+    tinkerOldApkPath = "${bakPath}/template_v1.0_official_debug_bak_12-02.apk"
     //proguard mapping file to build patch apk
-    tinkerApplyMappingPath = "${bakPath}/app-official-release-1201-07-21-mapping.txt"
+    tinkerApplyMappingPath = "${bakPath}/app-official-debug-12-02-bak-mapping.txt"
     //resource R.txt to build patch apk, must input if there is resource changed
-    tinkerApplyResourcePath = "${bakPath}/app-official-release-1201-07-21-R.txt"
+    tinkerApplyResourcePath = "${bakPath}/app-official-debug-12-02-bak-R.txt"
 
     //only use for build all flavor, if not, just ignore this field
-    //tinkerBuildFlavorDirectory = "${bakPath}/app-1201-14-48-32"
+    //tinkerBuildFlavorDirectory = "${bakPath}/app-official-debug-1201-17-35-25"
 }
 
 
@@ -65,8 +64,13 @@ def getTinkerBuildFlavorDirectory() {
     return ext.tinkerBuildFlavorDirectory
 }
 
-def time = new Date().format("MMdd-HH-mm-ss")
-def date = new Date().format("MMdd-HH-mm")
+def date
+if(buildWithTinker()){
+    //date = new Date().format("MMdd-HH-mm-ss")
+    date = new Date().format("MM-dd")
+}else {
+    date = new Date().format("MM-dd")
+}
 
 if (buildWithTinker()) {
     apply plugin: 'com.tencent.tinker.patch'
@@ -280,7 +284,7 @@ if (buildWithTinker()) {
                         def fileNamePrefix = "${project.name}-${variant.baseName}"
                         def newFileNamePrefix = hasFlavors ? "${fileNamePrefix}" : "${fileNamePrefix}-${date}"
 
-                        def destPath = hasFlavors ? file("${bakPath}/${project.name}-${time}/${variant.flavorName}") : bakPath
+                        def destPath = hasFlavors ? file("${bakPath}/${project.name}-${date}/${variant.flavorName}") : bakPath
                         from variant.outputs.outputFile
                         into destPath
                         rename { String fileName ->
@@ -364,7 +368,7 @@ android {
          * add for you in our task. you can copy tinker keep rules at
          * build/intermediates/tinker_intermediates/tinker_multidexkeep.pro
          */
-        //multiDexKeepProguard file("keep_in_main_dex.txt")
+       // multiDexKeepProguard file("keep_in_main_dex.txt")
         /**
          * buildConfig can change during patch!
          * we can use the newly value when patch
@@ -385,8 +389,8 @@ android {
     }
 
     compileOptions {
-        sourceCompatibility javaVersion
-        targetCompatibility javaVersion
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
     }
 
     //签名文件
@@ -423,10 +427,11 @@ android {
     buildTypes {
         debug {
             buildConfigField "boolean", "release", "false"
+            buildConfigField "String", "APP_KEY", "\"29d480a4e6f3b248\""
             resValue "string", "app_name", "TinkerDemo_Debug"
-            versionNameSuffix "_debug"//将debug版本的版本名设置为_debug 便于查看
+            //versionNameSuffix "_debug"//将debug版本的版本名设置为_debug 便于查看
             //  applicationIdSuffix ".debug"//将debug版本的包名设置为.debug以便能够同时在一台设备上安装debug和release版本的apk
-            manifestPlaceholders = [UMENG_APPKEY   : "55ffd2a8e0f55afca70031d7",
+            manifestPlaceholders = [UMENG_APPKEY   : "",
                                     BAIDUMAP_APIKEY: "",
                                     EASEMOB_APPKEY : ""]
             minifyEnabled false
@@ -439,8 +444,9 @@ android {
 
         develop {
             buildConfigField "boolean", "release", "false"
+            buildConfigField "String", "APP_KEY", "\"29d480a4e6f3b248\""
             resValue "string", "app_name", "TinkerDemo_Dev"
-            versionNameSuffix "_develop"//将debug版本的版本名设置为_develop 便于查看
+            //versionNameSuffix "_develop"//将debug版本的版本名设置为_develop 便于查看
             // applicationIdSuffix ".develop"//将debug版本的包名设置为.develop以便能够同时在一台设备上安装debug和release版本的apk
             manifestPlaceholders = [UMENG_APPKEY   : "",
                                     BAIDUMAP_APIKEY: "",
@@ -458,6 +464,7 @@ android {
         release {
             // 不显示Log
             buildConfigField "boolean", "release", "true"
+            buildConfigField "String", "APP_KEY", "\"29d480a4e6f3b248\""
             resValue "string", "app_name", "TinkerDemo"
             manifestPlaceholders = [UMENG_APPKEY   : "",
                                     BAIDUMAP_APIKEY: "",
@@ -549,5 +556,7 @@ dependencies {
     compile(rootProject.ext.dependencies["tinker-android-lib"]) {
         changing = true
     }
+    compile rootProject.ext.dependencies["tinker-server-android"]
+
 }
 

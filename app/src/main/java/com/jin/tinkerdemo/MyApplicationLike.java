@@ -9,7 +9,10 @@ import android.content.res.Resources;
 import android.os.Build;
 import android.support.multidex.MultiDex;
 
+import com.jin.tinkerdemo.patchserver.TinkerServerManager;
+import com.jin.tinkerdemo.util.TinkerManager;
 import com.tencent.tinker.anno.DefaultLifeCycle;
+import com.tencent.tinker.lib.tinker.Tinker;
 import com.tencent.tinker.lib.tinker.TinkerInstaller;
 import com.tencent.tinker.loader.app.DefaultApplicationLike;
 import com.tencent.tinker.loader.shareutil.ShareConstants;
@@ -61,9 +64,15 @@ public class MyApplicationLike extends DefaultApplicationLike {
         //you must install multiDex whatever tinker is installed!
         MultiDex.install(base);
 
+        TinkerManager.setTinkerApplicationLike(this);
 
-        TinkerInstaller.install(this);
+        TinkerManager.installTinker(this);
 
+
+        //初始化TinkerPatch 服务器 SDK
+        TinkerServerManager.installTinkerServer(getApplication(), Tinker.with(getApplication()), 3);
+        //每隔访问三小时服务器是否有更新
+        TinkerServerManager.checkTinkerUpdate(false);
     }
 
     @TargetApi(Build.VERSION_CODES.ICE_CREAM_SANDWICH)
