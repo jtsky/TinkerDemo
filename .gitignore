@@ -1,8 +1,11 @@
 *.iml
 .gradle/
 /local.properties
-/.idea
+/.idea/
 /build/
 /gradle/
 /captures
 .externalNativeBuild
+/gradle
+/gradlew
+/bakApk/

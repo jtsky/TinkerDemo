@@ -15,7 +15,6 @@ def gitSha() {
     }
 }
 
-
 def bakPath = file("${buildDir}/bakApk/")
 
 /**
@@ -64,13 +63,8 @@ def getTinkerBuildFlavorDirectory() {
     return ext.tinkerBuildFlavorDirectory
 }
 
-def date
-if(buildWithTinker()){
-    //date = new Date().format("MMdd-HH-mm-ss")
-    date = new Date().format("MM-dd")
-}else {
-    date = new Date().format("MM-dd")
-}
+def date = new Date().format("MM-dd")
+
 
 if (buildWithTinker()) {
     apply plugin: 'com.tencent.tinker.patch'
@@ -274,15 +268,14 @@ if (buildWithTinker()) {
          * task type, you want to bak
          */
         def taskName = variant.name
-
-
         tasks.all {
             if ("assemble${taskName.capitalize()}".equalsIgnoreCase(it.name)) {
-
+                println('it.name===>' + it.name)
                 it.doLast {
                     copy {
-                        def fileNamePrefix = "${project.name}-${variant.baseName}"
-                        def newFileNamePrefix = hasFlavors ? "${fileNamePrefix}" : "${fileNamePrefix}-${date}"
+                       // def fileNamePrefix = "${project.name}-${variant.baseName}"
+                        def fileNamePrefix = "template_v${rootProject.ext.android["versionName"]}_${variant.productFlavors[0].name}_debug"
+                        def newFileNamePrefix = hasFlavors ? "${fileNamePrefix}" : "${fileNamePrefix}_${date}"
 
                         def destPath = hasFlavors ? file("${bakPath}/${project.name}-${date}/${variant.flavorName}") : bakPath
                         from variant.outputs.outputFile
@@ -294,13 +287,13 @@ if (buildWithTinker()) {
                         from "${buildDir}/outputs/mapping/${variant.dirName}/mapping.txt"
                         into destPath
                         rename { String fileName ->
-                            fileName.replace("mapping.txt", "${newFileNamePrefix}-mapping.txt")
+                            fileName.replace("mapping.txt", "${newFileNamePrefix}_mapping.txt")
                         }
 
                         from "${buildDir}/intermediates/symbols/${variant.dirName}/R.txt"
                         into destPath
                         rename { String fileName ->
-                            fileName.replace("R.txt", "${newFileNamePrefix}-R.txt")
+                            fileName.replace("R.txt", "${newFileNamePrefix}_R.txt")
                         }
                     }
                 }
@@ -353,10 +346,10 @@ android {
     buildToolsVersion "24.0.2"
     defaultConfig {
         applicationId "com.jin.tinkerdemo"
-        minSdkVersion 15
-        targetSdkVersion 24
-        versionCode 1
-        versionName "1.0"
+        minSdkVersion rootProject.ext.android["minSdkVersion"]
+        targetSdkVersion rootProject.ext.android["targetSdkVersion"]
+        versionCode rootProject.ext.android["versionCode"]
+        versionName rootProject.ext.android["versionName"]
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
         /**
          * you can use multiDex and install it in your ApplicationLifeCycle implement
@@ -368,7 +361,7 @@ android {
          * add for you in our task. you can copy tinker keep rules at
          * build/intermediates/tinker_intermediates/tinker_multidexkeep.pro
          */
-       // multiDexKeepProguard file("keep_in_main_dex.txt")
+        // multiDexKeepProguard file("keep_in_main_dex.txt")
         /**
          * buildConfig can change during patch!
          * we can use the newly value when patch
