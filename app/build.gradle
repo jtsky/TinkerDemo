@@ -28,11 +28,11 @@ ext {
 
     //for normal build
     //old apk file to build patch apk
-    tinkerOldApkPath = "${bakPath}/template_v1.0_official_debug_bak_12-02.apk"
+    tinkerOldApkPath = "${bakPath}/tinker_v1.0_official_debug_bak_12-05.apk"
     //proguard mapping file to build patch apk
-    tinkerApplyMappingPath = "${bakPath}/app-official-debug-12-02-bak-mapping.txt"
+    tinkerApplyMappingPath = "${bakPath}/tinker_v1.0_official_debug_12-05_bak_mapping.txt"
     //resource R.txt to build patch apk, must input if there is resource changed
-    tinkerApplyResourcePath = "${bakPath}/app-official-debug-12-02-bak-R.txt"
+    tinkerApplyResourcePath = "${bakPath}/tinker_v1.0_official_debug_12-05_bak_R.txt"
 
     //only use for build all flavor, if not, just ignore this field
     //tinkerBuildFlavorDirectory = "${bakPath}/app-official-debug-1201-17-35-25"
@@ -274,7 +274,7 @@ if (buildWithTinker()) {
                 it.doLast {
                     copy {
                        // def fileNamePrefix = "${project.name}-${variant.baseName}"
-                        def fileNamePrefix = "template_v${rootProject.ext.android["versionName"]}_${variant.productFlavors[0].name}_debug"
+                        def fileNamePrefix = "tinker_v${rootProject.ext.android["versionName"]}_${variant.productFlavors[0].name}_debug"
                         def newFileNamePrefix = hasFlavors ? "${fileNamePrefix}" : "${fileNamePrefix}_${date}"
 
                         def destPath = hasFlavors ? file("${bakPath}/${project.name}-${date}/${variant.flavorName}") : bakPath
@@ -493,11 +493,11 @@ android {
                     // 输出apk名称为boohee_v1.0_2015-01-15_wandoujia.apk
                     def fileName
                     if (variant.buildType.name == "release") {
-                        fileName = "template_v${defaultConfig.versionName}_${variant.productFlavors[0].name}_release_${date}.apk"
+                        fileName = "tinker_v${defaultConfig.versionName}_${variant.productFlavors[0].name}_release_${date}.apk"
                     } else if (variant.buildType.name == "develop") {
-                        fileName = "template_v${defaultConfig.versionName}_${variant.productFlavors[0].name}_develop_${date}.apk"
+                        fileName = "tinker_v${defaultConfig.versionName}_${variant.productFlavors[0].name}_develop_${date}.apk"
                     } else {
-                        fileName = "template_v${defaultConfig.versionName}_${variant.productFlavors[0].name}_debug_${date}.apk"
+                        fileName = "tinker_v${defaultConfig.versionName}_${variant.productFlavors[0].name}_debug_${date}.apk"
                     }
                     println "-------替换apk文件名字----------"
                     output.outputFile = new File(outputFile.parent, fileName)
